@@ -1,0 +1,151 @@
+/* 移动端适配基础样式 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  /* 禁止页面缩放 */
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+:root {
+  /* 设计稿基准宽度，默认375px */
+  --design-width: 375;
+  /* 根字体大小，1rem = 10px */
+  font-size: calc(100vw / var(--design-width) * 10);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 0.14rem;
+  line-height: 1.5;
+  color: #333;
+  /* 禁止文本选择 */
+  -webkit-user-select: none;
+  user-select: none;
+  /* 禁止双击缩放 */
+  touch-action: manipulation;
+  /* 防止iOS字体大小调整 */
+  -webkit-text-size-adjust: 100%;
+  /* 禁止页面缩放 */
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  background: #ebecf0;
+}
+
+/* 确保app占满整个屏幕 */
+#app {
+  width: 100%;
+  min-height: 100vh;
+}
+/* 适配不同屏幕尺寸 */
+@media screen and (max-width: 320px) {
+  :root {
+    font-size: 8.533px;
+  }
+}
+
+@media screen and (min-width: 376px) and (max-width: 414px) {
+  :root {
+    font-size: 11.04px;
+  }
+}
+
+@media screen and (min-width: 415px) {
+  :root {
+    font-size: 12px;
+  }
+}
+
+
+/* 加载状态 */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem;
+  font-size: 0.14rem;
+  color: #999;
+}
+
+/* 空状态 */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.8rem 0;
+  font-size: 0.14rem;
+  color: #999;
+}
+
+/* 错误提示 */
+.error {
+  color: #ee0a24;
+  font-size: 0.12rem;
+  margin-top: 0.08rem;
+}
+
+/* 成功提示 */
+.success {
+  color: #07c160;
+  font-size: 0.12rem;
+  margin-top: 0.08rem;
+}
+
+/* 标签样式 */
+.tag {
+  display: inline-block;
+  padding: 0.04rem 0.08rem;
+  font-size: 0.12rem;
+  border-radius: 0.04rem;
+  margin-right: 0.08rem;
+}
+
+.tag-primary {
+  background-color: #ecf5ff;
+  color: #1989fa;
+}
+
+.tag-success {
+  background-color: #f0f9eb;
+  color: #07c160;
+}
+
+.tag-warning {
+  background-color: #fdf6ec;
+  color: #ff9800;
+}
+
+.tag-danger {
+  background-color: #fef0f0;
+  color: #ee0a24;
+}
+
+/* 分割线 */
+.divider {
+  height: 0.08rem;
+  background-color: #f5f5f5;
+}
+
+/* 底部按钮区域 */
+.bottom-btn {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 0.16rem;
+  z-index: 100;
+}
+
+.bottom-btn button {
+  flex: 1;
+}
