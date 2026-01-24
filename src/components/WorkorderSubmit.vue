@@ -170,16 +170,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from "vue";
+import { ref, reactive, onMounted, getCurrentInstance } from "vue";
 import { useRouter } from "vue-router";
 import { workorderApi } from "../api/workorder";
 import type { MainSaveReqVO } from "../api/workorder";
+import { showToast, showSuccessToast, showFailToast, showLoadingToast } from 'vant'
+
+// 获取组件实例
+const instance = getCurrentInstance();
 
 // 路由实例
 const router = useRouter();
 
-// 加载状态
-const loading = ref(false);
 // 显示工单类型选择器
 const showTypePicker = ref(false);
 // 显示通知人员选择器
@@ -197,15 +199,15 @@ const workorderTypes = ref<Array<{ id: number; name: string; value: number }>>([
 ]);
 
 // 通知人员列表 - 模拟数据
-const noticeList = ref<Array<{ id: number; title: string }>>([
-  { id: 1, title: "张三" },
-  { id: 2, title: "李四" },
-  { id: 3, title: "王五" },
-  { id: 4, title: "赵六" },
-  { id: 5, title: "钱七" },
-  { id: 6, title: "孙八" },
-  { id: 7, title: "周九" },
-  { id: 8, title: "吴十" },
+const noticeList = ref<Array<{ id: string; title: string }>>([
+  { id: '1', title: "张三" },
+  { id: '2', title: "李四" },
+  { id: '3', title: "王五" },
+  { id: '4', title: "赵六" },
+  { id: '5', title: "钱七" },
+  { id: '6', title: "孙八" },
+  { id: '7', title: "周九" },
+  { id: '8', title: "吴十" },
 ]);
 
 // 选中的通知人员
@@ -221,8 +223,7 @@ const levelOptions = [
 ];
 
 // 表单数据
-const form = reactive<MainSaveReqVO>({
-  id: 0,
+const form = reactive<MainSaveReqVO & { noticeIdsArray?: number[] }>({
   workorderTypeId: 0,
   workorderTitle: "",
   workorderContent: "",
@@ -233,6 +234,7 @@ const form = reactive<MainSaveReqVO>({
   initiatorName: "",
   initiatorOpenid: "31249", // 模拟openid
   noticeIds: "",
+  noticeIdsArray: [], // 通知人员数组
 });
 
 // 表单错误信息
@@ -273,8 +275,8 @@ const onToggleNotice = (notice: { id: number; title: string }) => {
  * 确认选择通知人员
  */
 const onConfirmNotice = () => {
-  // 将选中的通知人员ID转换为逗号分隔的字符串
-  form.noticeIds = selectedNotices.value.map((item) => item.id).join(",");
+  // 将选中的通知人员ID数组直接存储
+  form.noticeIdsArray = selectedNotices.value.map((item) => item.id);
   // 将选中的通知人员名称显示在输入框中
   noticeDisplayText.value = selectedNotices.value.map((item) => item.title).join("、");
   showNoticePicker.value = false;
@@ -332,7 +334,7 @@ const validateForm = (): boolean => {
   }
 
   // 验证通知人员
-  if (!form.noticeIds) {
+  if (!form.noticeIdsArray || form.noticeIdsArray.length === 0) {
     errors.noticeIds = "请选择通知人员";
     isValid = false;
   }
@@ -344,28 +346,47 @@ const validateForm = (): boolean => {
  * 提交表单
  */
 const submitForm = async () => {
-  console.log(form, 111);
+  // showSuccessToast('确认提交工单吗？')
+  
+  // showConfirmDialog({
+  //   title: '确认提交工单吗？',
+  // }).then(() => {}).catch(() => {})
+
   // 表单验证
   if (!validateForm()) {
     return;
   }
-
+  const toastLoding = showLoadingToast({
+    message: '工单创建中',
+    duration: 0, // 持续显示
+    forbidClick: true
+  });
+  
   try {
-    loading.value = true;
+    // 将通知人员数组转换为逗号分隔的字符串（如果API需要字符串格式）
+    const submitData = {
+      ...form,
+      noticeIds: form.noticeIdsArray
+    };
 
     // 调用API提交工单
-    await workorderApi.createWorkorder(form);
-
-    // 提交成功
-    alert("工单提交成功！");
-
+    await workorderApi.createWorkorder(submitData);
+    showSuccessToast('工单提交成功！')
     // 跳转到工单列表页
-    router.push("/workorder/list");
+    // setTimeout(() => {
+    //   router.push("/workorder/list");
+    // }, 2000);
   } catch (error) {
+    // showToast({
+    //   type: 'fail',
+    //   message: '工单提交失败！',
+    //   duration: 5000
+    // })
+    showFailToast('工单提交失败！')
     console.error("提交工单失败:", error);
-    alert("提交失败，请稍后重试");
   } finally {
-    loading.value = false;
+    // 关闭加载提示
+    // toastLoding.close()
   }
 };
 
@@ -373,7 +394,6 @@ const submitForm = async () => {
  * 重置表单
  */
 const resetForm = () => {
-  form.id = 0;
   form.workorderTypeId = 0;
   typeDisplayText.value = "";
   form.workorderTitle = "";
@@ -385,6 +405,7 @@ const resetForm = () => {
   form.initiatorName = "";
   form.initiatorOpenid = "31249";
   form.noticeIds = "";
+  form.noticeIdsArray = [];
   noticeDisplayText.value = "";
   selectedNotices.value = [];
 
@@ -407,7 +428,8 @@ const goBack = () => {
 onMounted(async () => {
   try {
     // 实际项目中应该调用API获取工单类型
-    // const types = await workorderApi.getWorkorderTypes();
+    const types = await workorderApi.getWorkorderTypes();
+    console.log(types,123213 )
     // workorderTypes.value = types.map(type => ({ ...type, value: type.id }));
   } catch (error) {
     console.error("获取工单类型失败:", error);

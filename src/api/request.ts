@@ -21,6 +21,7 @@ const axiosConfig: AxiosRequestConfig = {
   // 请求头配置
   headers: {
     'Content-Type': 'application/json;charset=utf-8',
+    'tenant-id': 142
   },
   // 响应数据类型
   responseType: 'json',

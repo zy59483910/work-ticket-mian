@@ -8,11 +8,11 @@ export default defineConfig({
     host: '0.0.0.0', // 使用0.0.0.0监听所有网络接口的IP地址
     port: 5173, // 或者你选择的端口号
     proxy: {
-      '/api': {
-        target: 'http://localhost:8080',
+      '/app-api': {
+        target: 'http://192.168.1.191:48080',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api/, ''),
+        // rewrite: (path) => path.replace(/^\/app-api/, ''),
       },
     },
   },

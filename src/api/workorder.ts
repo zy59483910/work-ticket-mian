@@ -5,10 +5,6 @@ import { request } from './request';
  */
 export interface MainSaveReqVO {
   /**
-   * 工单ID 主键
-   */
-  id: number;
-  /**
    * 工单类型ID（关联工单类型表主键）
    */
   workorderTypeId: number;
@@ -67,7 +63,11 @@ export interface MainSaveReqVO {
   /**
    * 通知人员（admin用户）
    */
-  noticeIds: string;
+  noticeIds?: string;
+  /**
+   * 通知人员数组（前端使用）
+   */
+  noticeIdsArray?: number[];
 }
 
 /**
@@ -243,7 +243,10 @@ export const workorderApi = {
   /**
    * 获取工单类型列表
    */
-  getWorkorderTypes(): Promise<Array<{id: number; name: string}>> {
-    return request.get<Array<{id: number; name: string}>>('/workorder/app/type/list');
+  getWorkorderTypes(): Promise<any> {
+    return request.get<any>('/workorder/app/type/page', {
+      pageNum: 1,
+      pageSize: 100
+    });
   },
 };

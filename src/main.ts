@@ -8,4 +8,6 @@ import 'vant/lib/index.css'  // 引入Vant样式
 const app = createApp(App)
 app.use(router)
 app.use(Vant)  // 全局注册Vant组件
+// app.use(Toast)  // 全局注册Toast组件
+
 app.mount('#app')
