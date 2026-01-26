@@ -149,6 +149,10 @@ export interface WorkorderItem {
    */
   id: number;
   /**
+   * 工单编号（业务唯一标识，如WO20260119001）
+   */
+  workorderNo?: string;
+  /**
    * 工单类型ID
    */
   workorderTypeId: number;
@@ -175,15 +179,15 @@ export interface WorkorderItem {
   /**
    * 用户认证状态
    */
-  userAuthStatus: number;
+  userAuthStatus?: number;
   /**
    * 用户认证时间
    */
-  userAuthTime: string;
+  userAuthTime?: string;
   /**
    * 用户认证意见
    */
-  userAuthContent: string;
+  userAuthContent?: string;
   /**
    * 工单状态
    */
@@ -228,6 +232,152 @@ export interface WorkorderItem {
    * 创建时间
    */
   createTime: string;
+  /**
+   * 维护人员手机号
+   */
+  handlerMobile?: string;
+  /**
+   * 维护人员信息
+   */
+  handlerInfo?: {
+    /**
+     * 创建时间
+     */
+    createTime?: string;
+    /**
+     * 更新时间
+     */
+    updateTime?: string;
+    /**
+     * 创建者
+     */
+    creator?: string;
+    /**
+     * 更新者
+     */
+    updater?: string;
+    /**
+     * 删除标记
+     */
+    deleted?: boolean;
+    /**
+     * 租户ID
+     */
+    tenantId?: number;
+    /**
+     * ID
+     */
+    id?: number;
+    /**
+     * 用户名
+     */
+    username?: string;
+    /**
+     * 密码
+     */
+    password?: string;
+    /**
+     * 昵称
+     */
+    nickname?: string;
+    /**
+     * 工号
+     */
+    jobNumber?: string;
+    /**
+     * 备注
+     */
+    remark?: string;
+    /**
+     * 部门ID
+     */
+    deptId?: number;
+    /**
+     * 部门名称
+     */
+    deptName?: string;
+    /**
+     * 岗位ID列表
+     */
+    postIds?: number[];
+    /**
+     * 邮箱
+     */
+    email?: string;
+    /**
+     * 手机号
+     */
+    mobile?: string;
+    /**
+     * 性别
+     */
+    sex?: number;
+    /**
+     * 头像
+     */
+    avatar?: string;
+    /**
+     * 状态
+     */
+    status?: number;
+    /**
+     * 登录IP
+     */
+    loginIp?: string;
+    /**
+     * UKey
+     */
+    ukey?: string;
+    /**
+     * 登录时间
+     */
+    loginDate?: string;
+    /**
+     * 角色名称
+     */
+    roleNames?: string;
+  };
+  /**
+   * 工单类型
+   */
+  workorderType?: {
+    /**
+     * 创建时间
+     */
+    createTime?: string;
+    /**
+     * 更新时间
+     */
+    updateTime?: string;
+    /**
+     * 创建者
+     */
+    creator?: string;
+    /**
+     * 更新者
+     */
+    updater?: string;
+    /**
+     * 删除标记
+     */
+    deleted?: boolean;
+    /**
+     * ID
+     */
+    id?: number;
+    /**
+     * 类型名称
+     */
+    typeName?: string;
+    /**
+     * 类型描述
+     */
+    typeDesc?: string;
+    /**
+     * 状态
+     */
+    status?: number;
+  };
 }
 
 /**
@@ -282,7 +432,7 @@ export const workorderApi = {
    * @param id 工单ID
    */
   getWorkorderDetail(id: number): Promise<WorkorderItem> {
-    return request.get<WorkorderItem>(`/workorder/app/main/detail/${id}`);
+    return request.get<WorkorderItem>(`/workorder/app/main/get?id=${id}`);
   },
   
   /**

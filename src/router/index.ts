@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import type { RouteRecordRaw } from 'vue-router';
 import WorkorderSubmit from '../components/WorkorderSubmit.vue';
 import WorkorderList from '../components/WorkorderList.vue';
+import WorkorderInfo from '../components/WorkorderInfo.vue';
 
 /**
  * 路由配置
@@ -25,6 +26,14 @@ const routes: Array<RouteRecordRaw> = [
     component: WorkorderSubmit,
     meta: {
       title: '发起工单'
+    }
+  },
+  {
+    path: '/workorder/detail/:id',
+    name: 'WorkorderDetail',
+    component: WorkorderInfo,
+    meta: {
+      title: '工单详情'
     }
   },
   {
