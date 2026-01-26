@@ -1,349 +1,549 @@
 <template>
   <div class="workorder-list">
     <!-- 头部 -->
-    <div class="header">
-      <div class="header-left"></div>
-      <div class="header-title">工单列表</div>
-      <div class="header-right">
-        <button @click="goToSubmit" class="header-btn">
-          <span class="header-btn-icon">+</span>
-        </button>
-      </div>
-    </div>
+    <van-nav-bar
+      title="工单列表"
+      left-arrow
+      @click-left="goBack"
+      fixed
+      :safe-area-inset-top="true"
+      class="custom-navbar"
+    />
 
     <!-- 内容区域 -->
     <div class="content">
-      <!-- 搜索框 -->
+      <!-- 搜索栏 -->
       <div class="search-bar">
-        <input 
-          v-model="searchKeyword" 
-          type="text" 
-          class="search-input" 
-          placeholder="搜索工单编号/标题/内容"
-          @keyup.enter="search"
+        <van-search
+          v-model="searchKeyword"
+          placeholder="搜索工单标题"
+          @search="onSearch"
+          @clear="onClear"
         />
-        <button class="search-btn" @click="search">
-          <span class="search-icon">🔍</span>
-        </button>
       </div>
 
-      <!-- 状态筛选 -->
-      <div class="status-filter">
-        <button 
-          v-for="status in statusOptions" 
-          :key="status.value"
-          :class="['status-btn', { active: activeStatus === status.value }]"
-          @click="filterByStatus(status.value)"
-        >
-          {{ status.label }}
-        </button>
+      <!-- 筛选栏 -->
+      <div class="filter-bar">
+        <van-dropdown-menu>
+          <van-dropdown-item
+            v-model="filterStatus"
+            :options="statusOptions"
+            @change="onFilterChange"
+          />
+          <van-dropdown-item
+            v-model="filterType"
+            :options="typeOptions"
+            @change="onFilterChange"
+          />
+        </van-dropdown-menu>
       </div>
 
       <!-- 工单列表 -->
-      <div class="list" v-if="workorders.length > 0">
-        <div 
-          v-for="workorder in workorders" 
-          :key="workorder.id" 
-          class="list-item"
-          @click="goToDetail(workorder.id)"
-        >
-          <!-- 工单头部信息 -->
-          <div class="workorder-header">
-            <div class="workorder-title">{{ workorder.workorderTitle }}</div>
-            <div :class="['status-tag', `status-${workorder.workorderStatus}`]">
-              {{ getStatusName(workorder.workorderStatus) }}
+      <div class="list-container">
+        <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
+          <van-list
+            v-model:loading="loading"
+            :finished="finished"
+            finished-text="没有更多了"
+            @load="onLoad"
+          >
+            <div
+              v-for="item in list"
+              :key="item.id"
+              class="workorder-item"
+              @click="goToDetail(item.id)"
+            >
+              <!-- 工单头部 -->
+              <div class="item-header">
+                <div class="item-title">{{ item.workorderTitle }}</div>
+                <div
+                  class="item-status"
+                  :class="getStatusClass(item.workorderStatus)"
+                >
+                  {{ getStatusText(item.workorderStatus) }}
+                </div>
+              </div>
+
+              <!-- 工单内容 -->
+              <div class="item-content">{{ item.workorderContent }}</div>
+
+              <!-- 工单信息 -->
+              <div class="item-info">
+                <div class="info-row">
+                  <span class="info-label">工单类型：</span>
+                  <span class="info-value">{{
+                    item.workorderType?.typeName || "-"
+                  }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">工单等级：</span>
+                  <span
+                    class="info-value level"
+                    :class="getLevelClass(item.level)"
+                  >
+                    {{ getLevelText(item.level) }}
+                  </span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">发起人：</span>
+                  <span class="info-value">{{
+                    item.initiatorName || "-"
+                  }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">发起时间：</span>
+                  <span class="info-value">{{ item.createTime || "-" }}</span>
+                </div>
+              </div>
             </div>
-          </div>
+          </van-list>
+        </van-pull-refresh>
 
-          <!-- 工单类型和等级 -->
-          <div class="workorder-meta">
-            <span class="meta-item">
-              类型：{{ workorder.workorderTypeName || '未知' }}
-            </span>
-            <span class="meta-item">
-              等级：{{ getLevelName(workorder.level) }}
-            </span>
-          </div>
-
-          <!-- 工单内容摘要 -->
-          <div class="workorder-content">
-            {{ getContentSummary(workorder.workorderContent) }}
-          </div>
-
-          <!-- 工单时间信息 -->
-          <div class="workorder-footer">
-            <div class="workorder-time">
-              {{ formatTime(workorder.createTime) }}
-            </div>
-            <div class="workorder-handler">
-              处理人：{{ workorder.handlerName || '未分配' }}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 空状态 -->
-      <div v-else-if="!loading" class="empty">
-        <div class="empty-icon">📋</div>
-        <div class="empty-text">暂无工单数据</div>
-      </div>
-
-      <!-- 加载状态 -->
-      <div v-else class="loading">
-        <div class="loading-icon">⏳</div>
-        <div class="loading-text">加载中...</div>
-      </div>
-
-      <!-- 分页加载 -->
-      <div v-if="!loading && workorders.length > 0 && hasMore" class="load-more">
-        <button @click="loadMore" class="load-more-btn">
-          加载更多
-        </button>
+        <!-- 空状态 -->
+        <van-empty
+          v-if="list.length === 0 && !loading"
+          description="暂无工单"
+          image="search"
+        />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import type { WorkorderItem } from '../api/workorder';
+import { ref, reactive, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { workorderApi } from "../api/workorder";
+import type { WorkorderItem } from "../api/workorder";
+import { Toast } from "vant";
 
 // 路由实例
 const router = useRouter();
 
+// 搜索关键词
+const searchKeyword = ref("");
+
+// 筛选状态
+const filterStatus = ref(null);
+const filterType = ref(null);
+
+// 列表数据
+const list = ref<WorkorderItem[]>([]);
+
+// 分页参数
+const pageNo = ref(1);
+const pageSize = ref(10);
+const total = ref(0);
+
 // 加载状态
 const loading = ref(false);
-// 搜索关键词
-const searchKeyword = ref('');
-// 当前激活的状态筛选
-const activeStatus = ref(-1);
-// 工单列表
-const workorders = ref<WorkorderItem[]>([]);
-// 分页信息
-const pagination = reactive({
-  page: 1,
-  pageSize: 10,
-  total: 0,
-});
-// 是否有更多数据
-const hasMore = ref(true);
+const refreshing = ref(false);
+const finished = ref(false);
 
 // 状态选项
-const statusOptions = [
-  { label: '全部', value: -1 },
-  { label: '待处理', value: 0 },
-  { label: '处理中', value: 1 },
-  { label: '已完成', value: 2 },
-  { label: '已驳回', value: 3 },
-];
+const statusOptions = ref([
+  { text: "全部状态", value: null },
+  { text: "待处理", value: "0" },
+  { text: "处理中", value: "1" },
+  { text: "已完成", value: "2" },
+  { text: "已驳回", value: "3" },
+]);
+
+// 类型选项
+const typeOptions = ref([
+  { text: "全部等级", value: null },
+  { text: "普通", value: '0' },
+  { text: "紧急", value: '1' },
+  { text: "加急", value: '2' },
+]);
 
 /**
- * 获取工单列表
+ * 获取状态文本
  */
-const getWorkorderList = async (isLoadMore = false) => {
-  if (loading.value) return;
+const getStatusText = (status: number) => {
+  const statusMap: Record<number, string> = {
+    0: "待处理",
+    1: "处理中",
+    2: "已完成",
+    3: "已驳回",
+  };
+  return statusMap[status] || "未知";
+};
+
+/**
+ * 获取状态样式类
+ */
+const getStatusClass = (status: number) => {
+  const classMap: Record<number, string> = {
+    0: "status-pending",
+    1: "status-processing",
+    2: "status-completed",
+    3: "status-rejected",
+  };
+  return classMap[status] || "";
+};
+
+/**
+ * 获取等级文本
+ */
+const getLevelText = (level: number) => {
+  const levelMap: Record<number, string> = {
+    0: "普通",
+    1: "紧急",
+    2: "加急",
+  };
+  return levelMap[level] || "普通";
+};
+
+/**
+ * 获取等级样式类
+ */
+const getLevelClass = (level: number) => {
+  const classMap: Record<number, string> = {
+    0: "level-normal",
+    1: "level-urgent",
+    2: "level-emergency",
+  };
+  return classMap[level] || "level-normal";
+};
+
+/**
+ * 加载工单列表
+ */
+const loadWorkorderList = async (isRefresh = false) => {
+  if (isRefresh) {
+    pageNo.value = 1;
+    list.value = [];
+    finished.value = false;
+  }
+
+  if (finished.value) {
+    return;
+  }
+
+  loading.value = true;
 
   try {
-    loading.value = true;
+    const params = {
+      pageNo: pageNo.value,
+      pageSize: pageSize.value,
+      workorderTitle: searchKeyword.value || undefined,
+      workorderStatus: filterStatus.value || undefined,
+      level: filterType.value || undefined,
+      initiatorOpenid: "31249",
+    };
 
-    // 如果是加载更多，页码+1
-    if (!isLoadMore) {
-      pagination.page = 1;
-      workorders.value = [];
+    const response = await workorderApi.getWorkorderList(params);
+    console.log(response);
+    if (response && response.list && response.list.length > 0) {
+      if (isRefresh || pageNo.value === 1) {
+        list.value = response.list;
+      } else {
+        list.value = [...list.value, ...response.list];
+      }
+
+      total.value = response.total || 0;
+
+      if (list.value.length >= total.value) {
+        finished.value = true;
+      } else {
+        pageNo.value++;
+      }
+    } else {
+      finished.value = true;
     }
-
-    // 构建请求参数
-    // const params = {
-    //   page: pagination.page,
-    //   pageSize: pagination.pageSize,
-    //   workorderStatus: activeStatus.value === -1 ? undefined : activeStatus.value,
-    //   // 实际项目中应该传递搜索关键词
-    //   // keyword: searchKeyword.value,
-    // };
-
-    // 调用API获取工单列表
-    // 实际项目中应该调用真实API
-    // const response = await workorderApi.getWorkorderList(params);
-    // workorders.value = isLoadMore ? [...workorders.value, ...response.list] : response.list;
-    // pagination.total = response.total;
-    // pagination.page = response.pageNum;
-    // hasMore.value = workorders.value.length < response.total;
-
-    // 模拟数据
-    const mockData: WorkorderItem[] = [
-      {
-        id: 1,
-        workorderTypeId: 12435,
-        workorderTypeName: '设备故障',
-        workorderTitle: '打印机无法打印',
-        workorderContent: '办公室打印机无法正常打印，尝试重启后仍然无法使用，请尽快处理。',
-        handlerId: 1,
-        handlerName: '张三',
-        userAuthStatus: 0,
-        userAuthTime: '',
-        userAuthContent: '',
-        workorderStatus: 1,
-        workorderStatusName: '处理中',
-        handleContent: '',
-        handleTime: '',
-        level: 1,
-        levelName: '紧急',
-        initiatorPhone: '13800138000',
-        initiatorName: '赵六',
-        initiatorOpenid: '31249',
-        noticeIds: '1,2,3',
-        createTime: '2024-01-23 10:00:00',
-      },
-      {
-        id: 2,
-        workorderTypeId: 12436,
-        workorderTypeName: '网络问题',
-        workorderTitle: '网络连接不稳定',
-        workorderContent: '会议室网络连接不稳定，经常断线，影响视频会议。',
-        handlerId: 2,
-        handlerName: '李四',
-        userAuthStatus: 0,
-        userAuthTime: '',
-        userAuthContent: '',
-        workorderStatus: 2,
-        workorderStatusName: '已完成',
-        handleContent: '已重启路由器，网络恢复正常',
-        handleTime: '2024-01-22 15:30:00',
-        level: 0,
-        levelName: '普通',
-        initiatorPhone: '13900139000',
-        initiatorName: '钱七',
-        initiatorOpenid: '31250',
-        noticeIds: '2,3,4',
-        createTime: '2024-01-22 09:15:00',
-      },
-      {
-        id: 3,
-        workorderTypeId: 12437,
-        workorderTypeName: '系统报错',
-        workorderTitle: 'CRM系统登录失败',
-        workorderContent: 'CRM系统登录时提示账号或密码错误，但密码是正确的，请排查问题。',
-        handlerId: 0,
-        handlerName: '',
-        userAuthStatus: 0,
-        userAuthTime: '',
-        userAuthContent: '',
-        workorderStatus: 0,
-        workorderStatusName: '待处理',
-        handleContent: '',
-        handleTime: '',
-        level: 2,
-        levelName: '加急',
-        initiatorPhone: '13700137000',
-        initiatorName: '孙八',
-        initiatorOpenid: '31251',
-        noticeIds: '1,3,5',
-        createTime: '2024-01-23 08:45:00',
-      },
-    ];
-
-    // 模拟筛选
-    let filteredData = mockData;
-    if (activeStatus.value !== -1) {
-      filteredData = mockData.filter(item => item.workorderStatus === activeStatus.value);
-    }
-
-    workorders.value = filteredData;
-    hasMore.value = false;
   } catch (error) {
-    console.error('获取工单列表失败:', error);
-    alert('获取工单列表失败，请稍后重试');
+    console.error("获取工单列表失败:", error);
+    Toast.fail({
+      message: "获取工单列表失败",
+      duration: 2000,
+      position: "top",
+    });
   } finally {
     loading.value = false;
+    refreshing.value = false;
   }
 };
 
 /**
- * 搜索工单
+ * 下拉刷新
  */
-const search = () => {
-  // 实际项目中应该根据关键词搜索
-  getWorkorderList();
+const onRefresh = () => {
+  refreshing.value = true;
+  loadWorkorderList(true);
 };
 
 /**
- * 按状态筛选
+ * 上拉加载
  */
-const filterByStatus = (status: number) => {
-  activeStatus.value = status;
-  getWorkorderList();
+const onLoad = () => {
+  loadWorkorderList(false);
 };
 
 /**
- * 加载更多
+ * 搜索
  */
-const loadMore = () => {
-  if (hasMore.value) {
-    pagination.page++;
-    getWorkorderList(true);
-  }
+const onSearch = () => {
+  pageNo.value = 1;
+  list.value = [];
+  finished.value = false;
+  loadWorkorderList(true);
 };
 
 /**
- * 跳转到工单详情页
+ * 清除搜索
+ */
+const onClear = () => {
+  searchKeyword.value = "";
+  onSearch();
+};
+
+/**
+ * 筛选变化
+ */
+const onFilterChange = () => {
+  pageNo.value = 1;
+  list.value = [];
+  finished.value = false;
+  loadWorkorderList(true);
+};
+
+/**
+ * 跳转到详情页
  */
 const goToDetail = (id: number) => {
-  // 实际项目中应该跳转到详情页
-  console.log('跳转到工单详情页:', id);
-  alert(`查看工单详情：${id}`);
+  router.push(`/workorder/detail/${id}`);
 };
 
 /**
- * 跳转到工单提交页
+ * 返回上一页
  */
-const goToSubmit = () => {
-  router.push('/workorder/submit');
+const goBack = () => {
+  router.back();
 };
 
 /**
- * 获取状态名称
- */
-const getStatusName = (status: number): string => {
-  const statusMap: Record<number, string> = {
-    0: '待处理',
-    1: '处理中',
-    2: '已完成',
-    3: '已驳回',
-  };
-  return statusMap[status] || '未知';
-};
-
-/**
- * 获取等级名称
- */
-const getLevelName = (level: number): string => {
-  const levelMap: Record<number, string> = {
-    0: '普通',
-    1: '紧急',
-    2: '加急',
-  };
-  return levelMap[level] || '未知';
-};
-
-/**
- * 获取内容摘要
- */
-const getContentSummary = (content: string): string => {
-  return content.length > 50 ? content.substring(0, 50) + '...' : content;
-};
-
-/**
- * 格式化时间
- */
-const formatTime = (time: string): string => {
-  return time;
-};
-
-/**
- * 组件挂载时获取工单列表
+ * 组件挂载时加载数据
  */
 onMounted(() => {
-  getWorkorderList();
+  loadWorkorderList(true);
 });
 </script>
+
+<style scoped>
+.workorder-list {
+  background: #f8f9fa;
+  min-height: 100vh;
+  padding-bottom: 2rem;
+}
+
+.content {
+  margin: 4rem auto 0;
+  width: 100%;
+  padding: 0 1rem;
+}
+
+/* 搜索栏 */
+.search-bar {
+  padding-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+:deep(.van-search) {
+  background: #ffffff !important;
+  border-radius: 1rem !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+  padding: 0.5rem 1rem !important;
+}
+
+:deep(.van-search__content) {
+  background: #ffffff !important;
+}
+
+/* 筛选栏 */
+.filter-bar {
+  margin-bottom: 1rem;
+}
+
+:deep(.van-dropdown-menu) {
+  background: #ffffff !important;
+  border-radius: 1rem !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+}
+
+:deep(.van-dropdown-menu__item) {
+  background: #ffffff !important;
+  color: #333 !important;
+  font-weight: 500 !important;
+}
+
+/* 列表容器 */
+.list-container {
+  background: #f8f9fa;
+  border-radius: 2rem;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+  min-height: calc(100vh - 12rem);
+}
+
+/* 工单项 */
+.workorder-item {
+  background: #ffffff;
+  border-radius: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  padding: 1.2rem;
+  margin-bottom: 1rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.workorder-item:active {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  transform: scale(0.99);
+}
+
+/* 工单头部 */
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.8rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.item-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #333;
+  flex: 1;
+  margin-right: 1rem;
+}
+
+.item-status {
+  padding: 0.3rem 0.8rem;
+  border-radius: 0.6rem;
+  font-size: 1rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-pending {
+  background: #fff7e6;
+  color: #faad14;
+}
+
+.status-processing {
+  background: #e6f7ff;
+  color: #1989fa;
+}
+
+.status-completed {
+  background: #f0f9eb;
+  color: #07c160;
+}
+
+.status-rejected {
+  background: #fef0f0;
+  color: #ee0a24;
+}
+
+/* 工单内容 */
+.item-content {
+  font-size: 1.2rem;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 工单信息 */
+.item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  font-size: 1.2rem;
+}
+
+.info-label {
+  color: #999;
+  margin-right: 0.5rem;
+  min-width: 5rem;
+}
+
+.info-value {
+  color: #333;
+  font-weight: 500;
+}
+
+.level {
+  padding: 0.2rem 0.6rem;
+  border-radius: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.level-normal {
+  background: #f0f9eb;
+  color: #07c160;
+}
+
+.level-urgent {
+  background: #fff7e6;
+  color: #faad14;
+}
+
+.level-emergency {
+  background: #fef0f0;
+  color: #ee0a24;
+}
+
+/* 导航栏 */
+:deep(.custom-navbar) {
+  background: #ffffff !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08) !important;
+  height: 4rem !important;
+  padding: 0 1rem !important;
+}
+
+:deep(.van-nav-bar__title) {
+  color: #333 !important;
+  font-weight: 600 !important;
+  font-size: 1.1rem !important;
+}
+
+:deep(.van-icon-arrow-left) {
+  color: #666 !important;
+  font-size: 1.2rem !important;
+  padding: 0.5rem !important;
+  border-radius: 50% !important;
+  transition: all 0.3s ease !important;
+}
+
+:deep(.van-icon-arrow-left:active) {
+  background: #f8f9fa !important;
+  transform: scale(0.95) !important;
+}
+
+/* 空状态 */
+:deep(.van-empty) {
+  background: transparent !important;
+}
+
+:deep(.van-empty__description) {
+  color: #999 !important;
+  font-size: 0.95rem !important;
+}
+
+/* 防止iOS双击缩放 */
+* {
+  touch-action: manipulation;
+}
+</style>

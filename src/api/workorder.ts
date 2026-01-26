@@ -75,25 +75,69 @@ export interface MainSaveReqVO {
  */
 export interface WorkorderListReqVO {
   /**
-   * 页码
+   * 页码，从 1 开始
    */
-  page: number;
+  pageNo: number;
   /**
-   * 每页条数
+   * 每页条数，最大值为 100
    */
   pageSize: number;
   /**
-   * 工单状态
+   * 工单编号（业务唯一标识，如WO20260119001）
    */
-  workorderStatus?: number;
+  workorderNo?: string;
   /**
-   * 工单类型ID
+   * 工单类型ID（关联工单类型表主键）
    */
   workorderTypeId?: number;
   /**
-   * 发起人openid
+   * 工单标题
+   */
+  workorderTitle?: string;
+  /**
+   * 工单内容（支持长文本）
+   */
+  workorderContent?: string;
+  /**
+   * 处理人ID（维护人员ID）
+   */
+  handlerId?: number;
+  /**
+   * 工单状态（0待处理 1处理中 2已完成 3已驳回）
+   */
+  workorderStatus?: number;
+  /**
+   * 处理内容
+   */
+  handleContent?: string;
+  /**
+   * 处理时间
+   */
+  handleTime?: string;
+  /**
+   * 工单等级（0普通 1紧急 2加急）
+   */
+  level?: number;
+  /**
+   * 发起人电话
+   */
+  initiatorPhone?: string;
+  /**
+   * 发起人姓名
+   */
+  initiatorName?: string;
+  /**
+   * 发起人openid（微信/第三方标识）
    */
   initiatorOpenid?: string;
+  /**
+   * 创建时间
+   */
+  createTime?: string;
+  /**
+   * 处理人手机号
+   */
+  handlerMobile?: string;
 }
 
 /**
@@ -191,25 +235,26 @@ export interface WorkorderItem {
  */
 export interface PageResponse<T> {
   /**
-   * 总条数
+   * 响应码
    */
-  total: number;
+  code: number;
   /**
-   * 总页数
+   * 响应数据
    */
-  pages: number;
+  data: {
+    /**
+     * 工单列表
+     */
+    list: T[];
+    /**
+     * 总量
+     */
+    total: number;
+  };
   /**
-   * 当前页
+   * 响应消息
    */
-  pageNum: number;
-  /**
-   * 每页条数
-   */
-  pageSize: number;
-  /**
-   * 数据列表
-   */
-  list: T[];
+  msg: string;
 }
 
 /**
@@ -229,7 +274,7 @@ export const workorderApi = {
    * @param params 查询参数
    */
   getWorkorderList(params: WorkorderListReqVO): Promise<PageResponse<WorkorderItem>> {
-    return request.get<PageResponse<WorkorderItem>>('/workorder/app/main/list', params);
+    return request.get<PageResponse<WorkorderItem>>('/workorder/app/main/page', params);
   },
   
   /**
