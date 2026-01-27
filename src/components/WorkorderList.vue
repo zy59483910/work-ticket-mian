@@ -65,7 +65,7 @@
               </div>
 
               <!-- 工单内容 -->
-              <div class="item-content">{{ item.workorderContent }}</div>
+              <!-- <div class="item-content">{{ item.workorderContent }}</div> -->
 
               <!-- 工单信息 -->
               <div class="item-info">
@@ -145,8 +145,9 @@ const statusOptions = ref([
   { text: "全部状态", value: null },
   { text: "待处理", value: "0" },
   { text: "处理中", value: "1" },
-  { text: "已完成", value: "2" },
+  { text: "处理完成", value: "2" },
   { text: "已驳回", value: "3" },
+  { text: "已结束", value: "4" },
 ]);
 
 // 类型选项
@@ -164,8 +165,9 @@ const getStatusText = (status: number) => {
   const statusMap: Record<number, string> = {
     0: "待处理",
     1: "处理中",
-    2: "已完成",
+    2: "处理完成",
     3: "已驳回",
+    4: "已结束",
   };
   return statusMap[status] || "未知";
 };
@@ -179,6 +181,7 @@ const getStatusClass = (status: number) => {
     1: "status-processing",
     2: "status-completed",
     3: "status-rejected",
+    4: "status-ended",
   };
   return classMap[status] || "";
 };

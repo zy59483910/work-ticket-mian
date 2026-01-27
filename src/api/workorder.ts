@@ -444,4 +444,14 @@ export const workorderApi = {
       pageSize: 100
     });
   },
+
+  // 获得系统维护人员分页
+  getHandlerPage(params: any): Promise<any> {
+    return request.get<any>('/workorder/app/admin/page', params);
+  },
+
+  // 用户认证结果
+  updateUserAuthStatus(data: any): Promise<any> {
+    return request.post<any>('/workorder/app/main/update-status', data);
+  },
 };

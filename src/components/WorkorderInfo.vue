@@ -120,7 +120,7 @@
 
       <!-- 状态变更操作卡片 -->
       <div class="info-card" v-if="canChangeStatus">
-        <div class="card-title">状态变更</div>
+        <div class="card-title">工单核验</div>
 
         <!-- 状态选择 -->
         <div class="status-selector">
@@ -198,10 +198,12 @@ const selectedStatus = ref(0);
 
 // 状态选项
 const statusOptions = ref([
-  { label: "处理中", value: 1 },
-  { label: "处理完成", value: 2 },
-  { label: "已驳回", value: 3 },
-  { label: "已结束", value: 4 },
+  // { label: "处理中", value: 1 },
+  // { label: "处理完成", value: 2 },
+  // { label: "已驳回", value: 3 },
+  // { label: "已结束", value: 4 },
+  { label: "拒绝", value: 2 },
+  { label: "确认", value: 1 },
 ]);
 
 /**
@@ -273,14 +275,19 @@ const selectStatus = (status: number) => {
  */
 const updateStatus = () => {
   // 暂时不调用接口，只更新本地状态
+  if (selectedStatus.value === 0) {
+    return;
+  }
+  
+
   updating.value = true;
 
   setTimeout(() => {
-    detail.value.workorderStatus = selectedStatus.value;
+    detail.value.workorderStatus = 4;
     updating.value = false;
 
     Toast.success({
-      message: "状态更新成功",
+      message: "工单核验成功",
       duration: 2000,
       position: "top",
     });
@@ -310,8 +317,8 @@ const loadDetail = async () => {
     if (response) {
       detail.value = response;
 
-      // 判断是否可以更改状态（待处理状态可以更改）
-      canChangeStatus.value = detail.value.workorderStatus === 0;
+      // 判断是否可以更改状态（处理完整，以及已驳回状态可以更改）
+      canChangeStatus.value = detail.value.workorderStatus === 2 || detail.value.workorderStatus === 3;
     }
   } catch (error) {
     console.error("获取工单详情失败:", error);

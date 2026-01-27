@@ -190,25 +190,10 @@ const showNoticePicker = ref(false);
 const typeDisplayText = ref("");
 
 // 工单类型列表 - 调整为vant ActionSheet需要的格式
-const workorderTypes = ref<Array<{ id: number; name: string; value: number }>>([
-  { id: 12435, name: "设备故障", value: 12435 },
-  { id: 12436, name: "网络问题", value: 12436 },
-  { id: 12437, name: "系统报错", value: 12437 },
-  { id: 12438, name: "业务咨询", value: 12438 },
-  { id: 12439, name: "其他问题", value: 12439 },
-]);
+const workorderTypes = ref([]);
 
-// 通知人员列表 - 模拟数据
-const noticeList = ref<Array<{ id: string; title: string }>>([
-  { id: '1', title: "张三" },
-  { id: '2', title: "李四" },
-  { id: '3', title: "王五" },
-  { id: '4', title: "赵六" },
-  { id: '5', title: "钱七" },
-  { id: '6', title: "孙八" },
-  { id: '7', title: "周九" },
-  { id: '8', title: "吴十" },
-]);
+// 通知人员列表 - 从接口获取
+const noticeList = ref<Array<{ id: number; title: string; mobile?: string }>>([]);
 
 // 选中的通知人员
 const selectedNotices = ref<Array<{ id: number; title: string }>>([]);
@@ -228,7 +213,7 @@ const form = reactive<MainSaveReqVO & { noticeIdsArray?: number[] }>({
   workorderTitle: "",
   workorderContent: "",
   handlerId: 0,
-  workorderStatus: 1, // 初始状态为处理中
+  workorderStatus: 0, // 初始状态为待处理
   level: 0,
   initiatorPhone: "",
   initiatorName: "",
@@ -251,10 +236,48 @@ const errors = reactive({
 /**
  * 选择工单类型
  */
-const onSelectType = (action: any) => {
+const onSelectType = async (action: any) => {
   form.workorderTypeId = action.value;
   typeDisplayText.value = action.name;
   showTypePicker.value = false;
+
+  // 清空通知人员选择
+  selectedNotices.value = [];
+  noticeDisplayText.value = "";
+  form.noticeIdsArray = [];
+  form.noticeIds = "";
+
+  // 根据工单类型获取系统维护人员
+  await loadNoticeList();
+};
+
+/**
+ * 加载通知人员列表
+ */
+const loadNoticeList = async () => {
+  try {
+    const params = {
+      pageNo: 1,
+      pageSize: 100,
+    };
+
+    const response = await workorderApi.getHandlerPage(params);
+
+    if (response && response.list) {
+      noticeList.value = response.list.map((item: any) => ({
+        id: item.openid,
+        // openid: item.openid,
+        title: item.adminUserRespDTO?.nickname || '未知',
+        mobile: item.mobile,
+      }));
+    }
+  } catch (error) {
+    console.error("获取通知人员列表失败:", error);
+    showToast({
+      message: "获取通知人员列表失败",
+      position: "top",
+    });
+  }
 };
 
 /**
@@ -262,7 +285,7 @@ const onSelectType = (action: any) => {
  */
 const onToggleNotice = (notice: { id: number; title: string }) => {
   const index = selectedNotices.value.findIndex((item) => item.id === notice.id);
-  if (index > -1) {
+  if (index !== -1) {
     // 已选中，取消选中
     selectedNotices.value.splice(index, 1);
   } else {
@@ -373,9 +396,9 @@ const submitForm = async () => {
     await workorderApi.createWorkorder(submitData);
     showSuccessToast('工单提交成功！')
     // 跳转到工单列表页
-    // setTimeout(() => {
-    //   router.push("/workorder/list");
-    // }, 2000);
+    setTimeout(() => {
+      router.push("/workorder/list");
+    }, 800);
   } catch (error) {
     // showToast({
     //   type: 'fail',
@@ -399,7 +422,7 @@ const resetForm = () => {
   form.workorderTitle = "";
   form.workorderContent = "";
   form.handlerId = 0;
-  form.workorderStatus = 1;
+  form.workorderStatus = 0;
   form.level = 0;
   form.initiatorPhone = "";
   form.initiatorName = "";
@@ -430,7 +453,11 @@ onMounted(async () => {
     // 实际项目中应该调用API获取工单类型
     const types = await workorderApi.getWorkorderTypes();
     console.log(types,123213 )
-    // workorderTypes.value = types.map(type => ({ ...type, value: type.id }));
+    workorderTypes.value = types?.list.map(type => ({ 
+      id: type.id,
+      name: type.typeName,
+      value: type.id
+    }));
   } catch (error) {
     console.error("获取工单类型失败:", error);
   }
