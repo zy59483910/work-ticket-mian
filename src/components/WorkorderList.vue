@@ -111,10 +111,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from "vue";
+import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { workorderApi } from "../api/workorder";
-import type { WorkorderItem } from "../api/workorder";
 import { Toast } from "vant";
 
 // 路由实例
@@ -128,7 +127,7 @@ const filterStatus = ref(null);
 const filterType = ref(null);
 
 // 列表数据
-const list = ref<WorkorderItem[]>([]);
+const list = ref([]);
 
 // 分页参数
 const pageNo = ref(1);

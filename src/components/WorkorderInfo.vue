@@ -156,7 +156,6 @@
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { workorderApi } from "../api/workorder";
-import type { WorkorderItem } from "../api/workorder";
 import { Toast } from "vant";
 import { formatDateTime } from "../utils/format";
 
@@ -186,6 +185,7 @@ const detail = ref({
   },
   handlerInfo: {
     nickname: "",
+    mobile: ""
   },
 });
 
@@ -210,20 +210,6 @@ const statusOptions = ref([
  * 判断是否可以更改状态
  */
 const canChangeStatus = ref(false);
-
-/**
- * 获取状态文本
- */
-const getStatusText = (status: number) => {
-  const statusMap: Record<number, string> = {
-    0: "待处理",
-    1: "处理中",
-    2: "处理完成",
-    3: "已驳回",
-    4: "已结束",
-  };
-  return statusMap[status] || "未知";
-};
 
 /**
  * 获取状态步骤
