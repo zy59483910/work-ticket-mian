@@ -143,4 +143,12 @@ export const workorderApi = {
   updateUserAuthStatus(data: any): Promise<any> {
     return request.post<any>('/workorder/app/main/update-status', data);
   },
+
+  /**
+   * 获取微信用户openid
+   * @param code 微信授权code
+   */
+  getWechatOpenid(code: string): Promise<{ openid: string }> {
+    return request.get<{ openid: string }>('/workorder/wx/code2openid', { code });
+  },
 };

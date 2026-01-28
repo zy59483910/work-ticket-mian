@@ -170,13 +170,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from "vue";
+import { ref, reactive, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
+import { useStore } from "vuex";
 import { workorderApi } from "../api/workorder";
 import { showToast, showSuccessToast, showFailToast, showLoadingToast } from 'vant'
+import { getWechatOpenid, getWechatCode, clearCodeFromUrl } from '../utils/wechat'
 
 // 路由实例
 const router = useRouter();
+const store = useStore();
+
+// 从store获取openid
+const openid = computed(() => store.getters.getOpenid);
+const isAuthorized = computed(() => store.getters.isAuthorized);
 
 // 显示工单类型选择器
 const showTypePicker = ref(false);
@@ -213,7 +220,7 @@ const form = ref({
   level: 0,
   initiatorPhone: "",
   initiatorName: "",
-  initiatorOpenid: "31249", // 模拟openid
+  initiatorOpenid: computed(() => openid.value || ""),
   noticeIds: "",
   noticeIdsArray: [], // 通知人员数组
 });
@@ -422,7 +429,6 @@ const resetForm = () => {
   form.value.level = 0;
   form.value.initiatorPhone = "";
   form.value.initiatorName = "";
-  form.value.initiatorOpenid = "31249";
   form.value.noticeIds = "";
   form.value.noticeIdsArray = [];
   noticeDisplayText.value = "";
@@ -446,16 +452,15 @@ const goBack = () => {
  */
 onMounted(async () => {
   try {
-    // 实际项目中应该调用API获取工单类型
     const types = await workorderApi.getWorkorderTypes();
-    console.log(types,123213 )
-    workorderTypes.value = types?.list.map(item => ({ 
+    console.log(types, 123213)
+    workorderTypes.value = types?.list.map((item: any) => ({
       id: item.id,
       name: item.typeName,
       value: item.id
     }));
   } catch (error) {
-    console.error("获取工单类型失败:", error);
+    console.error("初始化失败:", error);
   }
 });
 </script>
