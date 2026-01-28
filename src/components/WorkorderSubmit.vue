@@ -23,6 +23,22 @@
           </template>
         </van-field>
 
+        <!-- 系统选择 -->
+        <van-field
+          v-model="systemDisplayText"
+          name="systemId"
+          is-link
+          readonly
+          clickable
+          @click="showSystemPicker = true"
+          placeholder="请选择系统"
+          :error-message="errors.systemId"
+        >
+          <template #label>
+            <span class="required-label">系统</span>
+          </template>
+        </van-field>
+
         <!-- 工单标题 -->
         <van-field
           v-model="form.workorderTitle"
@@ -119,6 +135,14 @@
           @select="onSelectType"
         />
 
+        <!-- 系统选择器 -->
+        <van-action-sheet
+          v-model:show="showSystemPicker"
+          title="选择系统"
+          :actions="systemList"
+          @select="onSelectSystem"
+        />
+
         <!-- 通知人员选择器 -->
         <van-popup
           v-model:show="showNoticePicker"
@@ -128,9 +152,13 @@
         >
           <div class="notice-picker">
             <div class="notice-picker-header">
-              <van-button type="default" @click="onCancelNotice">取消</van-button>
+              <van-button type="default" @click="onCancelNotice"
+                >取消</van-button
+              >
               <div class="notice-picker-title">选择通知人员</div>
-              <van-button type="primary" @click="onConfirmNotice">确认</van-button>
+              <van-button type="primary" @click="onConfirmNotice"
+                >确认</van-button
+              >
             </div>
             <div class="notice-picker-content">
               <van-checkbox-group v-model="selectedNotices">
@@ -145,7 +173,11 @@
                       <div class="notice-item">
                         <van-checkbox
                           :name="notice"
-                          :checked="selectedNotices.some((item) => item.id === notice.id)"
+                          :checked="
+                            selectedNotices.some(
+                              (item) => item.id === notice.id
+                            )
+                          "
                           @click.stop
                         >
                           {{ notice.title }}
@@ -170,33 +202,43 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from "vue";
+import { ref, reactive, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
 import { workorderApi } from "../api/workorder";
-import { showToast, showSuccessToast, showFailToast, showLoadingToast } from 'vant'
-import { getWechatOpenid, getWechatCode, clearCodeFromUrl } from '../utils/wechat'
+import {
+  showToast,
+  showSuccessToast,
+  showFailToast,
+  showLoadingToast,
+} from "vant";
 
 // 路由实例
 const router = useRouter();
 const store = useStore();
 
-// 从store获取openid
-const openid = computed(() => store.getters.getOpenid);
-const isAuthorized = computed(() => store.getters.isAuthorized);
-
 // 显示工单类型选择器
 const showTypePicker = ref(false);
+// 显示系统选择器
+const showSystemPicker = ref(false);
 // 显示通知人员选择器
 const showNoticePicker = ref(false);
 // 工单类型显示文本
 const typeDisplayText = ref("");
+// 系统显示文本
+const systemDisplayText = ref("");
 
 // 工单类型列表 - 调整为vant ActionSheet需要的格式
 const workorderTypes = ref([]);
+// 系统列表 - 从接口获取
+const systemList = ref<
+  Array<{ id: number; systemName: string; systemDesc?: string }>
+>([]);
 
 // 通知人员列表 - 从接口获取
-const noticeList = ref<Array<{ id: number; title: string; mobile?: string }>>([]);
+const noticeList = ref<Array<{ id: number; title: string; mobile?: string }>>(
+  []
+);
 
 // 选中的通知人员
 const selectedNotices = ref<Array<{ id: number; title: string }>>([]);
@@ -213,6 +255,7 @@ const levelOptions = [
 // 表单数据
 const form = ref({
   workorderTypeId: 0,
+  systemId: 0,
   workorderTitle: "",
   workorderContent: "",
   handlerId: 0,
@@ -220,7 +263,7 @@ const form = ref({
   level: 0,
   initiatorPhone: "",
   initiatorName: "",
-  initiatorOpenid: computed(() => openid.value || ""),
+  initiatorOpenid: "",
   noticeIds: "",
   noticeIdsArray: [], // 通知人员数组
 });
@@ -228,6 +271,7 @@ const form = ref({
 // 表单错误信息
 const errors = reactive({
   workorderTypeId: "",
+  systemId: "",
   workorderTitle: "",
   workorderContent: "",
   initiatorName: "",
@@ -244,13 +288,32 @@ const onSelectType = async (action: any) => {
   typeDisplayText.value = action.name;
   showTypePicker.value = false;
 
+  // 清空系统选择
+  form.value.systemId = 0;
+  systemDisplayText.value = "";
+
+  // 清空通知人员选择
+  selectedNotices.value = [];
+  noticeDisplayText.value = "";
+  form.value.noticeIdsArray = [];
+  form.value.noticeIds = "";
+};
+
+/**
+ * 选择系统
+ */
+const onSelectSystem = async (action: any) => {
+  form.value.systemId = action.id;
+  systemDisplayText.value = action.name;
+  showSystemPicker.value = false;
+
   // 清空通知人员选择
   selectedNotices.value = [];
   noticeDisplayText.value = "";
   form.value.noticeIdsArray = [];
   form.value.noticeIds = "";
 
-  // 根据工单类型获取系统维护人员
+  // 根据系统ID获取通知人员
   await loadNoticeList();
 };
 
@@ -259,18 +322,21 @@ const onSelectType = async (action: any) => {
  */
 const loadNoticeList = async () => {
   try {
-    const params = {
+    const params: any = {
       pageNo: 1,
       pageSize: 100,
     };
+
+    if (form.value.systemId) {
+      params.systemId = form.value.systemId;
+    }
 
     const response = await workorderApi.getHandlerPage(params);
 
     if (response && response.list) {
       noticeList.value = response.list.map((item: any) => ({
         id: item.openid,
-        // openid: item.openid,
-        title: item.adminUserRespDTO?.nickname || '未知',
+        title: item.adminUserRespDTO?.nickname || "未知",
         mobile: item.mobile,
       }));
     }
@@ -287,7 +353,9 @@ const loadNoticeList = async () => {
  * 切换通知人员选择
  */
 const onToggleNotice = (notice: { id: number; title: string }) => {
-  const index = selectedNotices.value.findIndex((item) => item.id === notice.id);
+  const index = selectedNotices.value.findIndex(
+    (item) => item.id === notice.id
+  );
   if (index !== -1) {
     // 已选中，取消选中
     selectedNotices.value.splice(index, 1);
@@ -304,7 +372,9 @@ const onConfirmNotice = () => {
   // 将选中的通知人员ID数组直接存储
   form.value.noticeIdsArray = selectedNotices.value.map((item) => item.id);
   // 将选中的通知人员名称显示在输入框中
-  noticeDisplayText.value = selectedNotices.value.map((item) => item.title).join("、");
+  noticeDisplayText.value = selectedNotices.value
+    .map((item) => item.title)
+    .join("、");
   showNoticePicker.value = false;
 };
 
@@ -332,6 +402,12 @@ const validateForm = (): boolean => {
     isValid = false;
   }
 
+  // 验证系统
+  if (!form.value.systemId) {
+    errors.systemId = "请选择系统";
+    isValid = false;
+  }
+
   // 验证工单标题
   if (!form.value.workorderTitle.trim()) {
     errors.workorderTitle = "请输入工单标题";
@@ -354,7 +430,7 @@ const validateForm = (): boolean => {
   if (!form.value.initiatorPhone || !form.value.initiatorPhone.trim()) {
     errors.initiatorPhone = "请输入发起人电话";
     isValid = false;
-  } else if (!/^1[3-9]\d{9}$/.test(form.value.initiatorPhone || '')) {
+  } else if (!/^1[3-9]\d{9}$/.test(form.value.initiatorPhone || "")) {
     errors.initiatorPhone = "请输入正确的手机号码";
     isValid = false;
   }
@@ -373,7 +449,7 @@ const validateForm = (): boolean => {
  */
 const submitForm = async () => {
   // showSuccessToast('确认提交工单吗？')
-  
+
   // showConfirmDialog({
   //   title: '确认提交工单吗？',
   // }).then(() => {}).catch(() => {})
@@ -382,37 +458,33 @@ const submitForm = async () => {
   if (!validateForm()) {
     return;
   }
-  const toastLoding = showLoadingToast({
-    message: '工单创建中',
-    duration: 0, // 持续显示
-    forbidClick: true
+
+  showLoadingToast({
+    message: "工单创建中",
+    duration: 0,
+    forbidClick: true,
   });
-  
+
   try {
-    // 将通知人员数组转换为逗号分隔的字符串（如果API需要字符串格式）
+    // 将通知人员数组转换为逗号分隔的字符串
     const submitData = {
       ...form.value,
+      initiatorOpenid: store.getters.getOpenid || "",
       noticeIds: form.value.noticeIdsArray
     };
 
     // 调用API提交工单
     await workorderApi.createWorkorder(submitData);
-    showSuccessToast('工单提交成功！')
+    showSuccessToast("工单提交成功！");
     // 跳转到工单列表页
     setTimeout(() => {
       router.push("/workorder/list");
     }, 800);
   } catch (error) {
-    // showToast({
-    //   type: 'fail',
-    //   message: '工单提交失败！',
-    //   duration: 5000
-    // })
-    showFailToast('工单提交失败！')
+    showFailToast("工单提交失败！");
     console.error("提交工单失败:", error);
   } finally {
     // 关闭加载提示
-    // toastLoding.close()
   }
 };
 
@@ -421,7 +493,9 @@ const submitForm = async () => {
  */
 const resetForm = () => {
   form.value.workorderTypeId = 0;
+  form.value.systemId = 0;
   typeDisplayText.value = "";
+  systemDisplayText.value = "";
   form.value.workorderTitle = "";
   form.value.workorderContent = "";
   form.value.handlerId = 0;
@@ -441,6 +515,28 @@ const resetForm = () => {
 };
 
 /**
+ * 加载系统列表
+ */
+const loadSystemList = async () => {
+  try {
+    const response = await workorderApi.getSystemInfoPage();
+    if (response && response.list) {
+      systemList.value = response.list.map((item: any) => ({
+        id: item.id,
+        name: item.systemName,
+        value: item.id,
+      }));
+    }
+  } catch (error) {
+    console.error("获取系统列表失败:", error);
+    showToast({
+      message: "获取系统列表失败",
+      position: "top",
+    });
+  }
+};
+
+/**
  * 返回上一页
  */
 const goBack = () => {
@@ -448,17 +544,18 @@ const goBack = () => {
 };
 
 /**
- * 组件挂载时获取工单类型列表
+ * 组件挂载时获取工单类型列表和系统列表
  */
 onMounted(async () => {
   try {
     const types = await workorderApi.getWorkorderTypes();
-    console.log(types, 123213)
     workorderTypes.value = types?.list.map((item: any) => ({
       id: item.id,
       name: item.typeName,
-      value: item.id
+      value: item.id,
     }));
+
+    await loadSystemList();
   } catch (error) {
     console.error("初始化失败:", error);
   }
@@ -496,14 +593,16 @@ onMounted(async () => {
   height: 3.2rem;
   border-radius: 1rem;
   background: #ffffff;
-  box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.08), inset -3px -3px 6px rgba(0, 0, 0, 0.04);
+  box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.08),
+    inset -3px -3px 6px rgba(0, 0, 0, 0.04);
   border: none;
   color: #666;
   font-weight: 600;
   transition: all 0.3s ease;
 }
 .level-selector > button:active {
-  box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.1), inset -2px -2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.1),
+    inset -2px -2px 4px rgba(0, 0, 0, 0.05);
   transform: scale(0.98);
 }
 .level-selector > button.van-button--primary {
