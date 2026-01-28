@@ -5,7 +5,7 @@ import router from './router'
 import store from './store'
 import Vant from 'vant'
 import 'vant/lib/index.css'
-import { getWechatCode, getWechatOpenid, clearCodeFromUrl } from './utils/wechat'
+import { getWechatCode, getWechatOpenid, clearCodeFromUrl, wechatSilentAuth } from './utils/wechat'
 
 const app = createApp(App)
 app.use(router)
@@ -38,7 +38,8 @@ const initWechatAuth = async () => {
       console.error('微信授权失败:', error);
     }
   } else {
-    console.log('未检测到微信授权code');
+    console.log('未检测到微信授权code，开始授权');
+    wechatSilentAuth();
   }
 };
 

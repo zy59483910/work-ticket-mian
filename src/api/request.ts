@@ -15,13 +15,13 @@ interface ResponseData<T = any> {
  */
 const axiosConfig: AxiosRequestConfig = {
   // 基础URL，根据实际环境配置
-  baseURL: '/app-api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/app-api',
   // 请求超时时间
-  timeout: 10000,
+  timeout: Number(import.meta.env.VITE_REQUEST_TIMEOUT) || 10000,
   // 请求头配置
   headers: {
     'Content-Type': 'application/json;charset=utf-8',
-    'tenant-id': 146
+    'tenant-id': import.meta.env.VITE_TENANT_ID
   },
   // 响应数据类型
   responseType: 'json',
