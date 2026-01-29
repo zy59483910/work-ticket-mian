@@ -158,6 +158,12 @@ import { useRoute, useRouter } from "vue-router";
 import { workorderApi } from "../api/workorder";
 import { Toast } from "vant";
 import { formatDateTime } from "../utils/format";
+import {
+  showToast,
+  showSuccessToast,
+  showFailToast,
+  showLoadingToast,
+} from "vant";
 
 // 路由实例
 const route = useRoute();
@@ -260,24 +266,49 @@ const selectStatus = (status: number) => {
  * 更新状态
  */
 const updateStatus = () => {
-  // 暂时不调用接口，只更新本地状态
+  // 校验选择状态
   if (selectedStatus.value === 0) {
-    return;
-  }
-  
-
-  updating.value = true;
-
-  setTimeout(() => {
-    detail.value.workorderStatus = 4;
-    updating.value = false;
-
-    Toast.success({
-      message: "工单核验成功",
+    showFailToast({
+      message: "请选择拒绝或确认",
       duration: 2000,
       position: "top",
     });
-  }, 500);
+    return;
+  }
+  // 按钮状态
+  updating.value = true;
+  // 发起用户认证状态
+  workorderApi.updateUserAuthStatus({
+    id: detail.value.id,
+    userAuthStatus: selectedStatus.value,
+    userAuthContent: ''
+  }).then((response) => {
+    if (response) {
+      // 更新本地状态
+      detail.value.workorderStatus = 4;
+      // 按钮状态恢复
+      updating.value = false;
+      canChangeStatus.value = false;
+      showSuccessToast({
+        message: "工单核验成功",
+        duration: 2000,
+        position: "top",
+      });
+    } else {
+      showFailToast({
+        message: response.msg || "工单核验失败",
+        duration: 2000,
+        position: "top",
+      });
+    }
+    
+  }).catch(() => {
+    showFailToast({
+      message: "工单核验失败",
+      duration: 2000,
+      position: "top",
+    });
+  });
 };
 
 /**
@@ -308,11 +339,11 @@ const loadDetail = async () => {
     }
   } catch (error) {
     console.error("获取工单详情失败:", error);
-    // Toast.fail({
-    //   message: "获取工单详情失败",
-    //   duration: 2000,
-    //   position: "top",
-    // });
+    showFailToast({
+      message: "获取工单详情失败",
+      duration: 2000,
+      position: "top",
+    });
   } finally {
     loading.value = false;
   }

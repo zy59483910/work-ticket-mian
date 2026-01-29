@@ -54,7 +54,7 @@ export const workorderApi = {
 
   // 用户认证结果
   updateUserAuthStatus(data: any): Promise<any> {
-    return request.post<any>('/workorder/app/main/update-status', data);
+    return request.put<any>('/workorder/app/main/update-status', data);
   },
 
   /**

@@ -70,6 +70,12 @@
               <!-- 工单信息 -->
               <div class="item-info">
                 <div class="info-row">
+                  <span class="info-label">系统：</span>
+                  <span class="info-value">{{
+                    item.systemInfo?.systemName || "-"
+                  }}</span>
+                </div>
+                <div class="info-row">
                   <span class="info-label">工单类型：</span>
                   <span class="info-value">{{
                     item.workorderType?.typeName || "-"
@@ -92,7 +98,9 @@
                 </div>
                 <div class="info-row">
                   <span class="info-label">发起时间：</span>
-                  <span class="info-value">{{ item.createTime || "-" }}</span>
+                  <span class="info-value">{{
+                    formatDateTime(item.createTime) || "-"
+                  }}</span>
                 </div>
               </div>
             </div>
@@ -115,6 +123,7 @@ import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { workorderApi } from "../api/workorder";
 import { Toast } from "vant";
+import { formatDateTime } from "../utils/format";
 
 // 路由实例
 const router = useRouter();
@@ -152,9 +161,9 @@ const statusOptions = ref([
 // 类型选项
 const typeOptions = ref([
   { text: "全部等级", value: null },
-  { text: "普通", value: '0' },
-  { text: "紧急", value: '1' },
-  { text: "加急", value: '2' },
+  { text: "普通", value: "0" },
+  { text: "紧急", value: "1" },
+  { text: "加急", value: "2" },
 ]);
 
 /**
@@ -256,11 +265,11 @@ const loadWorkorderList = async (isRefresh = false) => {
     }
   } catch (error) {
     console.error("获取工单列表失败:", error);
-    Toast.fail({
-      message: "获取工单列表失败",
-      duration: 2000,
-      position: "top",
-    });
+    // Toast.fail({
+    //   message: "获取工单列表失败",
+    //   duration: 2000,
+    //   position: "top",
+    // });
   } finally {
     loading.value = false;
     refreshing.value = false;

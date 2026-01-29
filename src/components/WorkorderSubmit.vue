@@ -304,16 +304,10 @@ const onSelectType = async (action: any) => {
  */
 const onSelectSystem = async (action: any) => {
   form.value.systemId = action.id;
-  systemDisplayText.value = action.name;
+  systemDisplayText.value = action.systemName;
   showSystemPicker.value = false;
 
-  // 清空通知人员选择
-  selectedNotices.value = [];
-  noticeDisplayText.value = "";
-  form.value.noticeIdsArray = [];
-  form.value.noticeIds = "";
-
-  // 根据系统ID获取通知人员
+  // 根据系统ID获取通知人员（会自动全选）
   await loadNoticeList();
 };
 
@@ -339,6 +333,13 @@ const loadNoticeList = async () => {
         title: item.adminUserRespDTO?.nickname || "未知",
         mobile: item.mobile,
       }));
+
+      // 默认全选所有通知人员
+      selectedNotices.value = [...noticeList.value];
+      form.value.noticeIdsArray = selectedNotices.value.map((item) => item.id);
+      noticeDisplayText.value = selectedNotices.value
+        .map((item) => item.title)
+        .join("、");
     }
   } catch (error) {
     console.error("获取通知人员列表失败:", error);
