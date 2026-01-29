@@ -3,9 +3,7 @@
     <!-- 头部 -->
     <div class="header">
       <van-icon
-        name="arrow-left"
         size="1.8rem"
-        @click="goBack"
         class="back-icon"
       />
       <div class="header-title">系统维护人员绑定</div>
