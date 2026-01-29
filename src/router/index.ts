@@ -3,6 +3,7 @@ import type { RouteRecordRaw } from 'vue-router';
 import WorkorderSubmit from '../components/WorkorderSubmit.vue';
 import WorkorderList from '../components/WorkorderList.vue';
 import WorkorderInfo from '../components/WorkorderInfo.vue';
+import MaintainerBind from '../components/maintainerBind.vue';
 
 /**
  * 路由配置
@@ -34,6 +35,14 @@ const routes: Array<RouteRecordRaw> = [
     component: WorkorderInfo,
     meta: {
       title: '工单详情'
+    }
+  },
+  {
+    path: '/workorder/bind',
+    name: 'MaintainerBind',
+    component: MaintainerBind,
+    meta: {
+      title: '维护人员绑定'
     }
   },
   {

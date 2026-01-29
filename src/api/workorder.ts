@@ -47,6 +47,16 @@ export const workorderApi = {
     });
   },
 
+  // 通过手机号查询系统维护人员
+  getHandlerByPhone(phone: string): Promise<any> {
+    return request.get<any>(`/workorder/app/admin/getUserByPhone?phone=${phone}`);
+  },
+
+  // 维护人员绑定
+  bindHandler(data: any): Promise<any> {
+    return request.post<any>('/workorder/app/admin/update-openid', data);
+  },
+
   // 获得系统维护人员分页
   getHandlerPage(params: any): Promise<any> {
     return request.get<any>('/workorder/app/admin/page', params);
